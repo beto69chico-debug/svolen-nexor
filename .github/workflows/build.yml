@@ -1,0 +1,46 @@
+name: Compilar APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Pruebas de cobranza y avisos
+        run: ./gradlew --no-daemon testReleaseUnitTest
+
+      - name: Compilar APK firmado
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Preparar archivo
+        run: cp app/build/outputs/apk/release/app-release.apk SvolenNexor.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SvolenNexor-${{ github.run_number }}
+          path: SvolenNexor.apk
+
+      # Publica el APK en "Releases": el enlace .../releases/latest/download/SvolenNexor.apk
+      # siempre apunta a la versión más nueva.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Svölen-Nexor 1.0.${{ github.run_number }}
+          body: "APK para instalar directo en Android. Descarga SvolenNexor.apk."
+          files: SvolenNexor.apk
+          make_latest: "true"
