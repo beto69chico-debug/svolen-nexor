@@ -35,9 +35,16 @@ jobs:
         env:
           SIGNING_KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          AS_VARIABLES: ${{ vars.SIGNING_KEYSTORE_B64 != '' || vars.SIGNING_PASSWORD != '' }}
         run: |
-          if [ -z "$SIGNING_KEYSTORE_B64" ] || [ -z "$SIGNING_PASSWORD" ]; then
-            echo "::error::Faltan los secretos SIGNING_KEYSTORE_B64 y/o SIGNING_PASSWORD (Settings > Secrets and variables > Actions)."
+          missing=""
+          [ -z "$SIGNING_KEYSTORE_B64" ] && missing="$missing SIGNING_KEYSTORE_B64"
+          [ -z "$SIGNING_PASSWORD" ] && missing="$missing SIGNING_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Faltan estos secretos del repositorio:$missing (Settings > Secrets and variables > Actions > pestaña Secrets > Repository secrets)."
+            if [ "$AS_VARIABLES" = "true" ]; then
+              echo "::error::Están guardados como Variables, no como Secrets. Bórralos de Variables y créalos en la pestaña Secrets."
+            fi
             exit 1
           fi
           echo "$SIGNING_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
